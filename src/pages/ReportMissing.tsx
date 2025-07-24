@@ -129,6 +129,21 @@ const ReportMissing = () => {
 
       console.log('Successfully inserted:', data);
 
+      // After successful insertion, trigger face embedding generation for each photo
+      if (data && photoUrls.length > 0) {
+        console.log('Triggering face embedding generation...');
+        for (const url of photoUrls) {
+          try {
+            await supabase.functions.invoke('facial-recognition', {
+              body: { personId: data.id, imageUrl: url },
+            });
+            console.log(`Embedding request sent for ${url}`);
+          } catch (embeddingError) {
+            console.error(`Failed to trigger embedding for ${url}:`, embeddingError);
+          }
+        }
+      }
+
       toast({
         title: t('report.submitted.success'),
         description: t('report.registered'),

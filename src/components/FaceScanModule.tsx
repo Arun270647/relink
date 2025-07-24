@@ -137,22 +137,35 @@ const FaceScanModule = () => {
   };
 
   const performFaceMatching = async (scanImageUrl: string): Promise<{ high: MatchResult[], low: MatchResult[] }> => {
-    const { data: missingPersons, error } = await supabase
+    // Call the new image-matching function
+    const { data: matchData, error: matchError } = await supabase.functions.invoke('image-matching', {
+      body: { imageUrl: scanImageUrl },
+    });
+
+    if (matchError) throw matchError;
+
+    const matches = matchData.matches || [];
+    if (matches.length === 0) {
+      return { high: [], low: [] };
+    }
+
+    // Get the person details for each match
+    const personIds = matches.map((m: any) => m.person_id);
+    const { data: personDetails, error: personError } = await supabase
       .from('missing_persons')
       .select('id, name, age, gender, photo_url, health_conditions, last_seen_location, created_at')
-      .eq('status', 'missing')
-      .not('photo_url', 'is', null);
+      .in('id', personIds);
 
-    if (error) throw error;
+    if (personError) throw personError;
 
-    // Enhanced mock confidence scores - in real implementation, use AWS Rekognition or FaceAPI.js
-    const allResults: MatchResult[] = missingPersons
-      .map((person) => ({
+    // Combine match data with person details
+    const allResults: MatchResult[] = matches.map((match: any) => {
+      const person = personDetails.find(p => p.id === match.person_id);
+      return {
         ...person,
-        confidence: Math.random() * 40 + 60 // Mock confidence 60-100%
-      }))
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 5);
+        confidence: match.similarity * 100,
+      };
+    }).filter(Boolean);
 
     const highConfidence = allResults.filter(result => result.confidence > 80);
     const lowConfidence = allResults.filter(result => result.confidence > 50 && result.confidence <= 80);

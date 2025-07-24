@@ -18,6 +18,7 @@ import PoliceDashboard from "./pages/PoliceDashboard";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ReportMissing from "./pages/ReportMissing";
 import MyReports from "./pages/MyReports";
+import AdminPage from "./pages/AdminPage";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,11 @@ const App = () => (
               <Route path="/my-reports" element={
                 <ProtectedRoute>
                   <MyReports />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <AdminPage />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
